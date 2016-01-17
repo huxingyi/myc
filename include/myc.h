@@ -24,6 +24,8 @@ typedef void (*mycCb)(myc *conn, int status);
   char username[MYC_MAX_USERNAME_LEN + 1];\
   char password[MYC_MAX_PASSWORD_LEN + 1];\
   char dbname[MYC_MAX_DBNAME_LEN + 1];\
+  int mysqlErrCode;\
+  char mysqlErrMsg[MYC_MAX_ERR_MSG_LEN + 1];\
   int selectState;\
   int fieldIndex;\
   int fieldCount;\
@@ -49,8 +51,6 @@ typedef void (*mycCb)(myc *conn, int status);
   int analyzeState;\
   int wantPacketType;\
   int wantWriteSize;\
-  int mysqlErrCode;\
-  char mysqlErrMsg[MYC_MAX_ERR_MSG_LEN + 1];\
   char salt[SCRAMBLE_LENGTH + 1];\
   unsigned char sendBuf[MYC_MAX_SEND_BUFSIZE];\
   unsigned char recvBuf[3 + 1 + MYC_MAX_ROW_BUFSIZE];\
@@ -64,12 +64,14 @@ struct myc {
 
 void mycInit(myc *conn, unsigned char charset, const char *username,
     const char *password, const char *dbname);
+void mycReset(myc *conn);
 int mycRead(myc *conn, char *data, int size);
 int mycWantWriteSize(myc *conn);
 char *mycWantWriteData(myc *conn);
 int mycFinishWrite(myc *conn);
 int mycIsIdle(myc *conn);
-int mycExecuteLimit1000(myc *conn, const char *sql, int sqlLen, mycCb cb);
+int mycQueryLimit1000(myc *conn, const char *sql, int sqlLen, mycCb cb);
+int mycExecute(myc *conn, const char *sql, int sqlLen, mycCb cb);
 int mycGetFieldCount(myc *conn);
 int mycGetRowCount(myc *conn);
 long long mycGetRowNumber(myc *conn, int row, int column);

@@ -616,11 +616,17 @@ static int threebytelen(unsigned char *buf) {
 #define mycMin(a,b) (((a) < (b)) ? (a) : (b))
 #endif
 
+static int mycPulse(myc *conn) {
+  return 0;
+}
+
 static int mycSend(myc *conn, int size) {
   if (conn->isSending) {
     return -1;
   }
-  conn->wantWriteSize = size;
+  to_my_3(size, conn->sendBuf);
+  conn->sendBuf[3] = conn->packetNumber;
+  conn->wantWriteSize = 4 + size;
   conn->isSending = 1;
   return 0;
 }
@@ -645,7 +651,7 @@ int mycIsIdle(myc *conn) {
   return 1;
 }
 
-int mycExecuteLimit1000(myc *conn, const char *sql, int sqlLen, mycCb cb) {
+int mycQueryLimit1000(myc *conn, const char *sql, int sqlLen, mycCb cb) {
   unsigned char *payload = conn->sendBuf + 4;
   int offset = 0;
   if (!mycIsIdle(conn)) {
@@ -654,18 +660,34 @@ int mycExecuteLimit1000(myc *conn, const char *sql, int sqlLen, mycCb cb) {
   if (-1 == sqlLen) {
     sqlLen = strlen(sql);
   }
-  if (sqlLen > 6 && 0 == strncasecmp(sql, "SELECT", 6)) {
-    conn->fieldCount = 0;
-    conn->affectedRows = 0;
-    conn->insertId = 0;
-    conn->fieldIndex = 0;
-    conn->rowCount = 0;
-    conn->resOffset = 0;
-    conn->selectState = SELECT_STATE_WANT_FIELD_COUNT;
-    conn->wantPacketType = PACKET_TYPE_SELECT_RESULT;
-  } else {
-    conn->wantPacketType = PACKET_TYPE_EXECUTE_RESULT;
+  conn->fieldCount = 0;
+  conn->affectedRows = 0;
+  conn->insertId = 0;
+  conn->fieldIndex = 0;
+  conn->rowCount = 0;
+  conn->resOffset = 0;
+  conn->selectState = SELECT_STATE_WANT_FIELD_COUNT;
+  conn->wantPacketType = PACKET_TYPE_SELECT_RESULT;
+  payload[offset] = COM_QUERY;
+  offset += 1;
+  assert(sqlLen <= sizeof(conn->sendBuf) - 4 - 1);
+  memcpy(payload + offset, sql, sqlLen);
+  offset += sqlLen;
+  conn->packetNumber = 0;
+  conn->executeCb = cb;
+  return mycSend(conn, offset);
+}
+
+int mycExecute(myc *conn, const char *sql, int sqlLen, mycCb cb) {
+  unsigned char *payload = conn->sendBuf + 4;
+  int offset = 0;
+  if (!mycIsIdle(conn)) {
+    return -1;
   }
+  if (-1 == sqlLen) {
+    sqlLen = strlen(sql);
+  }
+  conn->wantPacketType = PACKET_TYPE_EXECUTE_RESULT;
   payload[offset] = COM_QUERY;
   offset += 1;
   assert(sqlLen <= sizeof(conn->sendBuf) - 4 - 1);
@@ -853,6 +875,10 @@ static int mycProcessPacket(myc *conn, unsigned char seqId,
           return -1;
         }
         
+        fprintf(stderr, 
+            "%s: <PACKET_TYPE_INITIAL_HANDSHAKE>\n",
+            __FUNCTION__);
+        
         conn->wantPacketType = PACKET_TYPE_LOGIN_RESULT;
         
         return 0;
@@ -884,6 +910,10 @@ static int mycProcessPacket(myc *conn, unsigned char seqId,
               __FUNCTION__, result, conn->mysqlErrCode, conn->mysqlErrMsg);
           return -1;
         }
+        
+        fprintf(stderr, 
+            "%s: <PACKET_TYPE_INIT_DB>\n",
+            __FUNCTION__);
         
         conn->logined = 1;
         conn->wantPacketType = PACKET_TYPE_UNKNOWN;
@@ -930,6 +960,10 @@ static int mycProcessPacket(myc *conn, unsigned char seqId,
           return -1;
         }
         
+        fprintf(stderr, 
+            "%s: <PACKET_TYPE_LOGIN_RESULT>\n",
+            __FUNCTION__);
+        
         conn->wantPacketType = PACKET_TYPE_INIT_DB;
         
         return mycPulse(conn);
@@ -957,6 +991,10 @@ static int mycProcessPacket(myc *conn, unsigned char seqId,
         if (0xff == result) {
           offset = mycReadErrorInfo(conn, payload, payloadLen, offset);
         }
+        
+        fprintf(stderr, 
+            "%s: <PACKET_TYPE_EXECUTE_RESULT>\n",
+            __FUNCTION__);
         
         if (0x00 == result) {
           char nul;
@@ -1008,6 +1046,10 @@ static int mycProcessPacket(myc *conn, unsigned char seqId,
           conn->wantPacketType = PACKET_TYPE_UNKNOWN;
           return mycFinishReq(conn, -1);
         }
+        
+        fprintf(stderr, 
+            "%s: <PACKET_TYPE_SELECT_RESULT>\n",
+            __FUNCTION__);
         
         switch (conn->selectState) {
           case SELECT_STATE_WANT_FIELD_COUNT: {
@@ -1087,7 +1129,7 @@ static int mycProcessPacket(myc *conn, unsigned char seqId,
                     &rowStrLen, &nul, payloadLen - offset);
                 if (consumeLen < 0) {
                   fprintf(stderr, 
-                    "%s: <SELECT_STATE_WANT_ROW_ITEM> read col(%d) failed",
+                    "%s: <SELECT_STATE_WANT_ROW_ITEM> read col(%d) failed\n",
                     __FUNCTION__, col);
                   return -1;
                 }
@@ -1098,7 +1140,7 @@ static int mycProcessPacket(myc *conn, unsigned char seqId,
                   if (conn->resOffset + (int)rowStrLen + 1 > 
                       sizeof(conn->resBuf)) {
                     fprintf(stderr, 
-                        "%s: <SELECT_STATE_WANT_ROW_ITEM> resBuf exceeded",
+                        "%s: <SELECT_STATE_WANT_ROW_ITEM> resBuf exceeded\n",
                         __FUNCTION__);
                     return -1;
                   }
@@ -1120,7 +1162,7 @@ static int mycProcessPacket(myc *conn, unsigned char seqId,
             } break;
           default: {
               fprintf(stderr, 
-                  "%s: <SELECT_STATE_WANT_ROW_ITEM> unknown selectState(%d)",
+                  "%s: <SELECT_STATE_WANT_ROW_ITEM> unknown selectState(%d)\n",
                   __FUNCTION__, conn->selectState);
               return -1;
             }
@@ -1128,7 +1170,7 @@ static int mycProcessPacket(myc *conn, unsigned char seqId,
       } break;
   default: {
         fprintf(stderr, 
-            "%s: <SELECT_STATE_WANT_ROW_ITEM> unknown wantPacketType(%d)",
+            "%s: unknown wantPacketType(%d)\n",
             __FUNCTION__, conn->wantPacketType);
         return -1;
       }
@@ -1146,6 +1188,14 @@ void mycInit(myc *conn, unsigned char charset, const char *username,
   strcpy(conn->password, password);
   strcpy(conn->dbname, dbname);
   conn->wantPacketType = PACKET_TYPE_INITIAL_HANDSHAKE;
+}
+
+void mycReset(myc *conn) {
+  void *data;
+  int ignoreSize = (char *)&conn->mysqlErrCode - (char *)conn;
+  data = conn->data;
+  memset((char *)conn + ignoreSize, 0, sizeof(myc) - ignoreSize);
+  conn->data = data;
 }
 
 int mycRead(myc *conn, char *data, int size) {
@@ -1215,6 +1265,7 @@ char *mycWantWriteData(myc *conn) {
 
 int mycFinishWrite(myc *conn) {
   conn->isSending = 0;
+  conn->wantWriteSize = 0;
   return mycPulse(conn);
 }
 
