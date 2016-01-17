@@ -875,9 +875,9 @@ static int mycProcessPacket(myc *conn, unsigned char seqId,
           return -1;
         }
         
-        fprintf(stderr, 
-            "%s: <PACKET_TYPE_INITIAL_HANDSHAKE>\n",
-            __FUNCTION__);
+        //fprintf(stderr, 
+        //    "%s: <PACKET_TYPE_INITIAL_HANDSHAKE>\n",
+        //    __FUNCTION__);
         
         conn->wantPacketType = PACKET_TYPE_LOGIN_RESULT;
         
@@ -911,9 +911,9 @@ static int mycProcessPacket(myc *conn, unsigned char seqId,
           return -1;
         }
         
-        fprintf(stderr, 
-            "%s: <PACKET_TYPE_INIT_DB>\n",
-            __FUNCTION__);
+        //fprintf(stderr, 
+        //    "%s: <PACKET_TYPE_INIT_DB>\n",
+        //    __FUNCTION__);
         
         conn->logined = 1;
         conn->wantPacketType = PACKET_TYPE_UNKNOWN;
@@ -960,9 +960,9 @@ static int mycProcessPacket(myc *conn, unsigned char seqId,
           return -1;
         }
         
-        fprintf(stderr, 
-            "%s: <PACKET_TYPE_LOGIN_RESULT>\n",
-            __FUNCTION__);
+        //fprintf(stderr, 
+        //    "%s: <PACKET_TYPE_LOGIN_RESULT>\n",
+        //    __FUNCTION__);
         
         conn->wantPacketType = PACKET_TYPE_INIT_DB;
         
@@ -992,9 +992,9 @@ static int mycProcessPacket(myc *conn, unsigned char seqId,
           offset = mycReadErrorInfo(conn, payload, payloadLen, offset);
         }
         
-        fprintf(stderr, 
-            "%s: <PACKET_TYPE_EXECUTE_RESULT>\n",
-            __FUNCTION__);
+        //fprintf(stderr, 
+        //    "%s: <PACKET_TYPE_EXECUTE_RESULT>\n",
+        //    __FUNCTION__);
         
         if (0x00 == result) {
           char nul;
@@ -1047,9 +1047,9 @@ static int mycProcessPacket(myc *conn, unsigned char seqId,
           return mycFinishReq(conn, -1);
         }
         
-        fprintf(stderr, 
-            "%s: <PACKET_TYPE_SELECT_RESULT>\n",
-            __FUNCTION__);
+        //fprintf(stderr, 
+        //    "%s: <PACKET_TYPE_SELECT_RESULT>\n",
+        //    __FUNCTION__);
         
         switch (conn->selectState) {
           case SELECT_STATE_WANT_FIELD_COUNT: {

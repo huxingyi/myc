@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 #define DBNAME     "au"
-#define DBHOST     "127.0.0.1"
+#define DBHOST     "127.0.0.1:3306"
 #define DBUSER     "root"
 #define DBPASSWORD "testsjkmmHAHAHAHA"
 

@@ -47,12 +47,12 @@ static void onRead(uv_stream_t *stream,
     ssize_t nread,
     const uv_buf_t* buf) {
   uvmyc *conn = (uvmyc *)stream->data;
-  fprintf(stderr, "%s: nread:%d\n", __FUNCTION__, nread);
+  //fprintf(stderr, "%s: nread:%d\n", __FUNCTION__, nread);
   if (nread <= 0) {
     uvmycReset(conn);
     return;
   }
-  fprintf(stderr, "read[%.*s]", nread, buf->base);
+  //fprintf(stderr, "read[%.*s]", nread, buf->base);
   if (0 != mycRead(&conn->base, buf->base, nread)) {
     uvmycReset(conn);
     return;
@@ -62,7 +62,7 @@ static void onRead(uv_stream_t *stream,
 
 static void onConnect(uv_connect_t *req, int status) {
   uvmyc *conn = (uvmyc *)req->data;
-  fprintf(stderr, "%s: status:%d\n", __FUNCTION__, status);
+  //fprintf(stderr, "%s: status:%d\n", __FUNCTION__, status);
   conn->isConnecting = 0;
   if (0 != status) {
     return;
@@ -81,14 +81,14 @@ static int uvmycIsPending(uvmyc *conn) {
 
 static void onClose(uv_handle_t *handle) {
   uvmyc *conn = (uvmyc *)handle->data;
-  fprintf(stderr, "%s:\n", __FUNCTION__);
+  //fprintf(stderr, "%s:\n", __FUNCTION__);
   conn->isClosing = 0;
   conn->connected = 0;
 }
 
 static void onWrite(uv_write_t *req, int status) {
   uvmyc *conn = (uvmyc *)req->data;
-  fprintf(stderr, "%s: status:%d\n", __FUNCTION__, status);
+  //fprintf(stderr, "%s: status:%d\n", __FUNCTION__, status);
   conn->isSending = 0;
   if (0 != status) {
     uvmycReset(conn);
