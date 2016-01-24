@@ -38,6 +38,7 @@ void uvmycInit(uvmyc *conn, unsigned char charset, const char *username,
     const char *password, const char *dbname, const char *host,
     uv_loop_t *loop);
 int uvmycStart(uvmyc *conn, uvmycCb idleCb);
+int uvmycIsIdle(uvmyc *conn);
 int uvmycQueryLimit1000(uvmyc *conn, const char *sql, int sqlLen, 
     uvmycCb cb);
 int uvmycExecute(uvmyc *conn, const char *sql, int sqlLen, 

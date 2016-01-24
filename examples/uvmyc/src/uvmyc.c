@@ -181,11 +181,15 @@ static void onExecute(myc *base, int status) {
   uvmycPulse(conn);
 }
 
+int uvmycIsIdle(uvmyc *conn) {
+  return conn->connected && !conn->executeCb && mycIsIdle(&conn->base);
+}
+
 int uvmycQueryLimit1000(uvmyc *conn, const char *sql, int sqlLen, 
     uvmycCb cb) {
   int result;
   assert(cb);
-  if (!conn->connected) {
+  if (!uvmycIsIdle(conn)) {
     return -1;
   }
   conn->executeCb = cb;
@@ -202,7 +206,7 @@ int uvmycExecute(uvmyc *conn, const char *sql, int sqlLen,
     uvmycCb cb) {
   int result;
   assert(cb);
-  if (!conn->connected) {
+  if (!uvmycIsIdle(conn)) {
     return -1;
   }
   conn->executeCb = cb;
