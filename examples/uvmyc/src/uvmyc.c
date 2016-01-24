@@ -178,6 +178,7 @@ static void onExecute(myc *base, int status) {
   uvmycCb cb = conn->executeCb;
   conn->executeCb = 0;
   cb(conn, status);
+  uvmycPulse(conn);
 }
 
 int uvmycQueryLimit1000(uvmyc *conn, const char *sql, int sqlLen, 
