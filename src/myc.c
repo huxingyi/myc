@@ -1196,6 +1196,7 @@ void mycReset(myc *conn) {
   data = conn->data;
   memset((char *)conn + ignoreSize, 0, sizeof(myc) - ignoreSize);
   conn->data = data;
+  conn->wantPacketType = PACKET_TYPE_INITIAL_HANDSHAKE;
 }
 
 int mycRead(myc *conn, char *data, int size) {
