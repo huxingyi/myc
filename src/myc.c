@@ -142,7 +142,7 @@ static inline int my_lcb_ll(const unsigned char *m, unsigned long long *r, char 
 
 typedef unsigned long ulong;
 typedef unsigned int uint;
-typedef unsigned char uchar;
+//typedef unsigned char uchar;
 
 struct rand_struct {
   unsigned long seed1,seed2,max_value;
